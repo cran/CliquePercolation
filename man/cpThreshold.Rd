@@ -4,12 +4,16 @@
 \alias{cpThreshold}
 \title{Optimizing \code{k} And \code{I} For Clique Percolation Community Detection}
 \usage{
-cpThreshold(W, method = c("unweighted", "weighted", "weighted.CFinder"),
-  k.range, I.range, threshold = c("largest.components.ratio", "chi",
-  "entropy"))
+cpThreshold(
+  W,
+  method = c("unweighted", "weighted", "weighted.CFinder"),
+  k.range,
+  I.range,
+  threshold = c("largest.components.ratio", "chi", "entropy")
+)
 }
 \arguments{
-\item{W}{A qgraph object; see also \link[qgraph]{qgraph}}
+\item{W}{A qgraph object or a symmetric matrix; see also \link[qgraph]{qgraph}}
 
 \item{method}{A string indicating the method to use 
 (\code{"unweighted"}, \code{"weighted"}, or \code{"weighted.CFinder"}).
@@ -132,6 +136,20 @@ W <- qgraph::qgraph(W, layout = "spring", edge.labels = TRUE)
 results <- cpThreshold(W = W, method = "weighted", k.range = 3,
                        I.range = c(seq(0.3, 0.09, by = -0.01)),
                        threshold = c("largest.components.ratio","chi","entropy"))
+
+## Example with Obama data set (see ?Obama)
+
+# get data
+data(Obama)
+
+# estimate network
+net <- qgraph::EBICglasso(qgraph::cor_auto(Obama), n = nrow(Obama))
+
+# determine entropy threshold for k from 3 to 4 and I from 0.1 to 0.5
+threshold <- cpThreshold(net, method = "weighted",
+                         k.range = 3:4,
+                         I.range = seq(0.1, 0.5, 0.01),
+                         threshold = "entropy")
 
 }
 \references{

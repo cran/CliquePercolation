@@ -1,6 +1,6 @@
 Package: CliquePercolation
-Version: 0.2.0
-Date: 2019-10-14
+Version: 0.3.0
+Date: 2021-05-28
 Title: Clique Percolation for Networks
 Description: Clique percolation community detection for weighted and 
     unweighted networks as well as threshold and plotting functions.
@@ -9,19 +9,22 @@ Description: Clique percolation community detection for weighted and
 Authors@R: c(
            person("Jens", "Lange", email = "lange.jens@outlook.com",
                   role = c("aut", "cre")),
-           person("Janis", "Zickfeld", role = c("ctb")))
+           person("Janis", "Zickfeld", role = c("ctb")),
+           person("Alexander P.", "Christensen", role = c("ctb")))
 Maintainer: Jens Lange <lange.jens@outlook.com>
 License: GPL-3
 Encoding: UTF-8
+LazyData: true
 Depends: R (>= 3.6.0)
 Imports: colorspace, graphics, igraph, magrittr, Matrix, methods,
-        Polychrome, qgraph, stats, utils
-RoxygenNote: 6.1.1
+        Polychrome, qgraph, stats, utils, parallel, pbapply
+RoxygenNote: 7.1.1
 Suggests: knitr, rmarkdown
 VignetteBuilder: knitr
 NeedsCompilation: no
-Packaged: 2019-10-22 12:09:44 UTC; Jens Lange
+Packaged: 2021-05-29 09:27:55 UTC; Jens Lange
 Author: Jens Lange [aut, cre],
-  Janis Zickfeld [ctb]
+  Janis Zickfeld [ctb],
+  Alexander P. Christensen [ctb]
 Repository: CRAN
-Date/Publication: 2019-10-28 13:30:08 UTC
+Date/Publication: 2021-05-29 16:30:09 UTC

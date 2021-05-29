@@ -1,4 +1,4 @@
-## ---- include = FALSE----------------------------------------------------
+## ---- include = FALSE---------------------------------------------------------
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
@@ -79,10 +79,10 @@ qgraph(W, edge.color = color8, theme = "colorblind", cut = 0.02, edge.labels = T
 qgraph(W, edge.color = color9, theme = "colorblind", cut = 0.02, edge.labels = TRUE,
        layout = layout, fade = FALSE, title = "k = 3, I = 0.09", title.cex = 0.5)
 
-## ----setup---------------------------------------------------------------
-library(CliquePercolation)
-library(qgraph)
-library(Matrix)
+## ----setup--------------------------------------------------------------------
+library(CliquePercolation) #version 0.3.0
+library(qgraph)            #version 1.6.5
+library(Matrix)            #version 1.2-18
 
 ## ---- echo = TRUE, dpi = 400, fig.cap = "**Weighted network with 150 nodes.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "100%"----
 # create qgraph object; 150 nodes with letters as names; 1/7 of edges different from zero
@@ -100,22 +100,31 @@ W[which(W == 1)] <- rand_w
 W <- Matrix::forceSymmetric(W)
 W <- qgraph::qgraph(W, theme = "colorblind", layout = "spring", cut = 0.4)
 
-## ---- echo = TRUE, eval = FALSE------------------------------------------
+## ---- echo = TRUE, eval = FALSE-----------------------------------------------
 #  thresholds <- cpThreshold(W, method = "weighted", k.range = c(3,4),
 #                            I.range = c(seq(0.40, 0.01, by = -0.005)),
 #                            threshold = c("largest.components.ratio","chi"))
 
-## ---- echo = TRUE, eval = FALSE------------------------------------------
+## ---- echo = TRUE, eval = FALSE-----------------------------------------------
 #  thresholds
 
-## ---- echo = TRUE--------------------------------------------------------
+## ---- echo = TRUE-------------------------------------------------------------
 cpk3I.35 <- cpAlgorithm(W, k = 3, method = "weighted", I = 0.35)
 cpk4I.27 <- cpAlgorithm(W, k = 4, method = "weighted", I = 0.27)
 
-## ---- echo = TRUE, results = FALSE---------------------------------------
+## ---- echo = TRUE-------------------------------------------------------------
+cpk3I.35
+
+## ---- echo = TRUE, results = FALSE--------------------------------------------
+summary(cpk3I.35)
+
+## ---- echo = TRUE, results = FALSE--------------------------------------------
+summary(cpk3I.35, details = "shared.nodes.numbers")
+
+## ---- echo = TRUE, results = FALSE--------------------------------------------
 cpk3I.35$list.of.communities.numbers
 
-## ---- echo = TRUE, results = FALSE---------------------------------------
+## ---- echo = TRUE, results = FALSE--------------------------------------------
 cpk3I.35$list.of.communities.labels
 
 ## ---- echo = TRUE, results = FALSE, dpi = 300, fig.cap = "**Community size distribution with k = 3 and I = 0.35.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
@@ -124,22 +133,31 @@ cpCommunitySizeDistribution(cpk3I.35$list.of.communities.numbers)
 ## ---- echo = TRUE, results = FALSE, dpi = 300, fig.cap = "**Community size distribution with k = 4 and I = 0.27.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
 cpCommunitySizeDistribution(cpk4I.27$list.of.communities.numbers)
 
+## ---- echo = TRUE, eval = FALSE-----------------------------------------------
+#  fit_pl_k3I.35 <- cpCommunitySizeDistribution(cpk3I.35$list.of.communities.numbers, test.power.law = TRUE)
+
+## ---- include = FALSE---------------------------------------------------------
+fit_pl_k3I.35 <- cpCommunitySizeDistribution(cpk3I.35$list.of.communities.numbers, test.power.law = TRUE)
+
+## ---- echo = TRUE-------------------------------------------------------------
+fit_pl_k3I.35$fit.power.law
+
 ## ---- echo = TRUE, dpi = 400, fig.cap = "**Community network with k = 3 and I = 0.35.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "100%"----
 commnetwork <- cpCommunityGraph(cpk3I.35$list.of.communities.numbers,
                                 node.size.method = "proportional",
                                 max.node.size = 20,
                                 theme = "colorblind", layout = "spring", repulsion = 0.4)
 
-## ---- echo = TRUE, results = FALSE---------------------------------------
+## ---- echo = TRUE, results = FALSE--------------------------------------------
 commnetwork$community.weights.matrix
 
-## ---- echo = FALSE, dpi = 300, fig.cap = "**Unweighted network with ten nodes.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
+## ---- echo = TRUE, dpi = 300, fig.cap = "**Unweighted network with ten nodes.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
 W <- matrix(c(0,1,1,1,0,0,0,0,0,0,
               0,0,1,1,0,0,0,0,0,0,
               0,0,0,0,0,0,0,0,0,0,
-              0,0,0,0,1,1,1,0,0,0,
-              0,0,0,0,0,1,1,0,0,0,
-              0,0,0,0,0,0,1,0,0,0,
+              0,0,0,0,1,1,0,0,0,0,
+              0,0,0,0,0,1,0,0,0,0,
+              0,0,0,0,0,0,1,1,1,0,
               0,0,0,0,0,0,0,1,1,0,
               0,0,0,0,0,0,0,0,1,0,
               0,0,0,0,0,0,0,0,0,1,
@@ -149,41 +167,37 @@ rownames(W) <- letters[seq(from = 1, to = nrow(W))]
 colnames(W) <- letters[seq(from = 1, to = nrow(W))]
 W <- qgraph(W, edge.width = 4)
 
-## ---- echo = TRUE, results = FALSE---------------------------------------
+## ---- echo = TRUE, results = FALSE--------------------------------------------
 thresholds.small <- cpThreshold(W, method = "unweighted", k.range = c(3,4),
                                 threshold = "entropy")
 
-## ---- echo = TRUE--------------------------------------------------------
+## ---- echo = TRUE-------------------------------------------------------------
 thresholds.small
 
-## ---- echo = TRUE, results = FALSE---------------------------------------
-set.seed(4186)
+## ---- echo = TRUE, results = FALSE--------------------------------------------
 permute <- cpPermuteEntropy(W, cpThreshold.object = thresholds.small,
-                            n = 100, interval = 0.95)
+                            n = 100, interval = 0.95,
+                            ncores = 2, seed = 4186)
 
-## ---- echo = TRUE--------------------------------------------------------
+## ---- echo = TRUE-------------------------------------------------------------
+permute
+
+## ---- echo = TRUE, results = FALSE--------------------------------------------
 permute$Confidence.Interval
-
-## ---- echo = TRUE--------------------------------------------------------
 permute$Extracted.Rows
 
-## ---- echo = TRUE--------------------------------------------------------
+## ---- echo = TRUE-------------------------------------------------------------
 cpk3 <- cpAlgorithm(W, k = 3, method = "unweighted")
 
-## ---- echo = TRUE--------------------------------------------------------
-cpk3$list.of.communities.labels
-
-## ---- echo = TRUE--------------------------------------------------------
-cpk3$shared.nodes.labels
-
-## ---- echo = TRUE--------------------------------------------------------
-cpk3$isolated.nodes.labels
+## ---- echo = TRUE-------------------------------------------------------------
+cpk3
+summary(cpk3)
 
 ## ---- echo = TRUE, dpi = 300, fig.cap = "**Community coloring I.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
 colored.net1 <- cpColoredGraph(W, list.of.communities = cpk3$list.of.communities.labels,
                                edge.width = 4)
 
-## ---- echo = TRUE, results = FALSE---------------------------------------
+## ---- echo = TRUE, results = FALSE--------------------------------------------
 colored.net1$colors.communities
 colored.net1$colors.nodes
 
@@ -194,12 +208,12 @@ colored.net2 <- cpColoredGraph(W, list.of.communities = cpk3$list.of.communities
 
 ## ---- echo = TRUE, dpi = 300, fig.cap = "**Community coloring III.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
 #define list.of.sets
-list.of.sets <- list(c("a","b","c","d","g","h","i"), c("e","f","j"))
+list.of.sets1 <- list(c("a","b","c","d","e","f"), c("g","h","i","j"))
 colored.net3 <- cpColoredGraph(W, list.of.communities = cpk3$list.of.communities.labels,
-                               list.of.sets = list.of.sets,
+                               list.of.sets = list.of.sets1,
                                edge.width = 4)
 
-## ---- echo = TRUE, results = FALSE---------------------------------------
+## ---- echo = TRUE, results = FALSE--------------------------------------------
 colored.net3$basic.colors.sets
 
 ## ---- echo = FALSE, dpi = 300, fig.cap = "**Color patches.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
@@ -207,7 +221,32 @@ swatchplot(colored.net3$basic.colors.sets)
 
 ## ---- echo = TRUE, dpi = 300, fig.cap = "**Community coloring IV.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
 colored.net4 <- cpColoredGraph(W, list.of.communities = cpk3$list.of.communities.labels,
-                               list.of.sets = list.of.sets, set.palettes.size = 5,
+                               list.of.sets = list.of.sets1, set.palettes.size = 5,
+                               edge.width = 4)
+
+## ---- echo = TRUE, dpi = 300, fig.cap = "**Community coloring V.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
+#define list.of.sets
+list.of.sets2 <- list(c("a","d","e","f","g"), c("b","c","h","i","j"))
+colored.net5 <- cpColoredGraph(W, list.of.communities = cpk3$list.of.communities.labels,
+                               list.of.sets = list.of.sets2,
+                               edge.width = 4)
+
+## ---- echo = TRUE-------------------------------------------------------------
+colored.net5$colors.nodes
+
+## ---- echo = TRUE, dpi = 300, fig.cap = "**Community coloring VI.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
+set.seed(4186)
+colored.net6 <- cpColoredGraph(W, list.of.communities = cpk3$list.of.communities.labels,
+                               list.of.sets = list.of.sets2,
+                               avoid.repeated.mixed.colors = TRUE,
+                               edge.width = 4)
+
+## ---- echo = TRUE-------------------------------------------------------------
+colored.net6$colors.nodes
+
+## ---- echo = TRUE, dpi = 300, fig.cap = "**Community coloring VI.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
+colored.net6 <- cpColoredGraph(W, list.of.communities = cpk3$list.of.communities.labels,
+                               own.colors = c("#FF0000","#00FF00","#0000FF"),
                                edge.width = 4)
 
 ## ---- echo = TRUE, dpi = 300, fig.cap = "**Large network with 11 communities colored with qualitative_hcl.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
@@ -249,6 +288,7 @@ cpk3.large <- cpAlgorithm(W, k = 3, method = "unweighted")
 colored.net.large1 <- cpColoredGraph(W, list.of.communities = cpk3.large$list.of.communities.labels,                                      edge.width = 4, layout = "spring", repulsion = 0.9)
 
 ## ---- echo = TRUE, dpi = 300, fig.cap = "**Large network with 11 communities colored with createPalette.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
+set.seed(4186)
 colored.net.large2 <- cpColoredGraph(W, list.of.communities = cpk3.large$list.of.communities.labels,
                                      larger.six = TRUE,
                                      edge.width = 4, layout = "spring", repulsion = 0.9)

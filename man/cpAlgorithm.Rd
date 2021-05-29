@@ -4,11 +4,10 @@
 \alias{cpAlgorithm}
 \title{Clique Percolation Community Detection}
 \usage{
-cpAlgorithm(W, k, method = c("unweighted", "weighted",
-  "weighted.CFinder"), I)
+cpAlgorithm(W, k, method = c("unweighted", "weighted", "weighted.CFinder"), I)
 }
 \arguments{
-\item{W}{A qgraph object; see also \link[qgraph]{qgraph}}
+\item{W}{A qgraph object or a symmetric matrix; see also \link[qgraph]{qgraph}}
 
 \item{k}{Clique size (number of nodes that should form a clique)}
 
@@ -23,15 +22,17 @@ A list object with the following elements:
   \item{list.of.communities.numbers}{list of communities with numbers as identifiers 
         of nodes}
   \item{list.of.communities.labels}{list of communities with labels from qgraph object 
-        as identifiers of nodes}
+        or row or column names of matrix as identifiers of nodes}
   \item{shared.nodes.numbers}{vector with all nodes that belong to multiple communities 
         with numbers as identifiers of nodes}
   \item{shared.nodes.labels}{vector with all nodes that belong to multiple communities 
-        with labels from qgraph object as identifiers of nodes}
+        with labels from qgraph object or row or column names of matrix  as identifiers
+        of nodes}
   \item{isolated.nodes.numbers}{vector with all nodes that belong to no community 
         with numbers as identifiers of nodes}
   \item{isolated.nodes.labels}{vector with all nodes that belong to no community 
-        with labels from qgraph object as identifiers of nodes}
+        with labels from qgraph object or row or column names of matrix as identifiers
+        of nodes}
   \item{k}{user-specified \code{k}}
   \item{method}{user-specified method}
   \item{I}{user-specified \code{I} (if method was \code{"weighted"} 
@@ -77,6 +78,12 @@ W <- qgraph::qgraph(W)
 # run clique percolation for unweighted networks
 results <- cpAlgorithm(W = W, k = 3, method = "unweighted")
 
+# print results overview
+results
+
+# extract more information about communities
+summary(results)
+
 ## Example for weighted networks
 
 # create qgraph object
@@ -96,6 +103,29 @@ W <- qgraph::qgraph(W)
 
 # run clique percolation for weighted networks
 results <- cpAlgorithm(W = W, k = 3, method = "weighted", I = 0.1)
+
+# print results overview
+results
+
+# extract more information about communities
+summary(results)
+
+## Example with Obama data set (see ?Obama)
+
+# get data
+data(Obama)
+
+# estimate network
+net <- qgraph::EBICglasso(qgraph::cor_auto(Obama), n = nrow(Obama))
+
+# run clique percolation algorithm with specific k and I
+cpk3I.16 <- cpAlgorithm(net, k = 3, I = 0.16, method = "weighted")
+
+# print results overview
+cpk3I.16
+
+# extract more information about communities
+summary(cpk3I.16)
 
 }
 \references{

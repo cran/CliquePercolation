@@ -3,7 +3,7 @@
 #' Function for clique percolation community detection algorithms for weighted
 #' and unweighted networks.
 #'
-#' @param W A qgraph object; see also \link[qgraph]{qgraph}
+#' @param W A qgraph object or a symmetric matrix; see also \link[qgraph]{qgraph}
 #' @param k Clique size (number of nodes that should form a clique)
 #' @param method A string indicating the method to use 
 #'   (\code{"unweighted"}, \code{"weighted"}, or \code{"weighted.CFinder"}); see Details 
@@ -15,15 +15,17 @@
 #'   \item{list.of.communities.numbers}{list of communities with numbers as identifiers 
 #'         of nodes}
 #'   \item{list.of.communities.labels}{list of communities with labels from qgraph object 
-#'         as identifiers of nodes}
+#'         or row or column names of matrix as identifiers of nodes}
 #'   \item{shared.nodes.numbers}{vector with all nodes that belong to multiple communities 
 #'         with numbers as identifiers of nodes}
 #'   \item{shared.nodes.labels}{vector with all nodes that belong to multiple communities 
-#'         with labels from qgraph object as identifiers of nodes}
+#'         with labels from qgraph object or row or column names of matrix  as identifiers
+#'         of nodes}
 #'   \item{isolated.nodes.numbers}{vector with all nodes that belong to no community 
 #'         with numbers as identifiers of nodes}
 #'   \item{isolated.nodes.labels}{vector with all nodes that belong to no community 
-#'         with labels from qgraph object as identifiers of nodes}
+#'         with labels from qgraph object or row or column names of matrix as identifiers
+#'         of nodes}
 #'   \item{k}{user-specified \code{k}}
 #'   \item{method}{user-specified method}
 #'   \item{I}{user-specified \code{I} (if method was \code{"weighted"} 
@@ -65,6 +67,12 @@
 #' # run clique percolation for unweighted networks
 #' results <- cpAlgorithm(W = W, k = 3, method = "unweighted")
 #' 
+#' # print results overview
+#' results
+#' 
+#' # extract more information about communities
+#' summary(results)
+#' 
 #' ## Example for weighted networks
 #' 
 #' # create qgraph object
@@ -85,6 +93,29 @@
 #' # run clique percolation for weighted networks
 #' results <- cpAlgorithm(W = W, k = 3, method = "weighted", I = 0.1)
 #' 
+#' # print results overview
+#' results
+#' 
+#' # extract more information about communities
+#' summary(results)
+#' 
+#' ## Example with Obama data set (see ?Obama)
+#' 
+#' # get data
+#' data(Obama)
+#' 
+#' # estimate network
+#' net <- qgraph::EBICglasso(qgraph::cor_auto(Obama), n = nrow(Obama))
+#' 
+#' # run clique percolation algorithm with specific k and I
+#' cpk3I.16 <- cpAlgorithm(net, k = 3, I = 0.16, method = "weighted")
+#' 
+#' # print results overview
+#' cpk3I.16
+#' 
+#' # extract more information about communities
+#' summary(cpk3I.16)
+#' 
 #' @references
 #' Farkas, I., Abel, D., Palla, G., & Vicsek, T. (2007). Weighted network modules.
 #' \emph{New Journal of Physics, 9}, 180-180. http://doi.org/10.1088/1367-2630/9/6/180
@@ -101,9 +132,24 @@
 
 cpAlgorithm <- function(W, k, method = c("unweighted","weighted","weighted.CFinder"), I){
   
-  ###error message if W is not a qgraph object
-  if (methods::is(W, "qgraph") == FALSE) {
-    stop("W (network object) must be a qgraph object.")
+  ###check whether W is a qgraph object
+  ###if not check whether matrix is symmetric and convert to qgraph object
+  if (!isTRUE(methods::is(W, "qgraph"))) {
+    
+    #error if W is a matrix but not symmetric
+    if (isSymmetric(W) == FALSE) {
+      stop("If W is a matrix, it must be symmetric.")
+    }
+    
+    #converts matrix to qgraph if input is not a qgraph object
+    W <- qgraph::qgraph(W, DoNotPlot = TRUE)
+    
+    #### OLD ERROR BEGIN ####
+    
+    #stop("W (network object) must be a qgraph object.")
+    
+    #### OLD ERROR END ####
+    
   }
   ###error message if k is not larger than 2
   if (k < 3) {
@@ -307,7 +353,7 @@ cpAlgorithm <- function(W, k, method = c("unweighted","weighted","weighted.CFind
     names(results_unweighted) <- c("list.of.communities.numbers","list.of.communities.labels",
                                    "shared.nodes.numbers","shared.nodes.labels",
                                    "isolated.nodes.numbers","isolated.nodes.labels")
-    return(c(results_unweighted,list(k = k, method = method)))
+    returned_object <- c(results_unweighted,list(k = k, method = method))
   }
   
   if (method == "weighted" | method == "weighted.CFinder") {
@@ -320,7 +366,11 @@ cpAlgorithm <- function(W, k, method = c("unweighted","weighted","weighted.CFind
     names(results_weighted) <- c("list.of.communities.numbers","list.of.communities.labels",
                                  "shared.nodes.numbers","shared.nodes.labels",
                                  "isolated.nodes.numbers","isolated.nodes.labels")
-    return(c(results_weighted,list(k = k, method = method, I = I)))
+    returned_object <- c(results_weighted,list(k = k, method = method, I = I))
   }
+  
+  class(returned_object) <- "cpAlgorithm"
+  
+  return(returned_object)
   
 }

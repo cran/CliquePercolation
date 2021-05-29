@@ -4,7 +4,7 @@
 #' community sizes, chi, entropy) of ranges of \code{k} and \code{I} values to help deciding
 #' for optimal \code{k} and \code{I} values.
 #' 
-#' @param W A qgraph object; see also \link[qgraph]{qgraph}
+#' @param W A qgraph object or a symmetric matrix; see also \link[qgraph]{qgraph}
 #' @param method A string indicating the method to use 
 #'    (\code{"unweighted"}, \code{"weighted"}, or \code{"weighted.CFinder"}).
 #'    See \link{cpAlgorithm} for more information
@@ -118,6 +118,20 @@
 #' results <- cpThreshold(W = W, method = "weighted", k.range = 3,
 #'                        I.range = c(seq(0.3, 0.09, by = -0.01)),
 #'                        threshold = c("largest.components.ratio","chi","entropy"))
+#'
+#' ## Example with Obama data set (see ?Obama)
+#' 
+#' # get data
+#' data(Obama)
+#' 
+#' # estimate network
+#' net <- qgraph::EBICglasso(qgraph::cor_auto(Obama), n = nrow(Obama))
+#' 
+#' # determine entropy threshold for k from 3 to 4 and I from 0.1 to 0.5
+#' threshold <- cpThreshold(net, method = "weighted",
+#'                          k.range = 3:4,
+#'                          I.range = seq(0.1, 0.5, 0.01),
+#'                          threshold = "entropy")
 #' 
 #' @references
 #' Farkas, I., Abel, D., Palla, G., & Vicsek, T. (2007). Weighted network modules.
@@ -129,6 +143,35 @@
 
 cpThreshold <- function(W, method = c("unweighted","weighted","weighted.CFinder"), k.range, I.range,
                         threshold = c("largest.components.ratio","chi","entropy")){
+  
+  ###check whether W is a qgraph object
+  ###if not check whether matrix is symmetric and convert to qgraph object
+  if (!isTRUE(methods::is(W, "qgraph"))) {
+
+    #error if W is a matrix but not symmetric
+    if (isSymmetric(W) == FALSE) {
+      stop("If W is a matrix, it must be symmetric.")
+    }
+    
+    #converts matrix to qgraph if input is not a qgraph object
+    W <- qgraph::qgraph(W, DoNotPlot = TRUE)
+    
+    #### OLD ERROR BEGIN ####
+    
+    #stop("W (network object) must be a qgraph object.")
+    
+    #### OLD ERROR END ####
+    
+  }
+  ###error message if method is not "unweighted", "weighted", or "weighted.CFinder"
+  if (method != "unweighted" & method != "weighted" & method != "weighted.CFinder") {
+    stop("method must be 'unweighted', 'weighted', or 'weighted.CFinder' (depending on the network).")
+  }
+  ###error messages if threshold is not "largest.components.ratio", "chi", and/or "entropy"
+  check_threshold <- all(threshold %in% c("largest.components.ratio","chi","entropy"))
+  if (check_threshold == FALSE) {
+    stop("threshold must be 'largest.components.ratio', 'chi', and/or 'entropy'.")
+  }
   
   #function for chi formula
   formula_chi <- function(size_comm){
@@ -331,6 +374,9 @@ cpThreshold <- function(W, method = c("unweighted","weighted","weighted.CFinder"
     }
   }
   
+  #close progress bar
+  close(progress_bar)
+  
   #return data frame with respective values and add thresholds depending on request
   
   #first, create data set with information about simulation parameters depending on method
@@ -348,21 +394,15 @@ cpThreshold <- function(W, method = c("unweighted","weighted","weighted.CFinder"
   #second, add required thresholds
   
   if ("largest.components.ratio" %in% threshold) {
-    names_data_lcr <- c(names(data),"Ratio.Threshold")
-    data <- data.frame(cbind(data,ratio))
-    names(data) <- names_data_lcr
+    data <- cbind(data, Ratio.Threshold = ratio)
   }
   
   if ("chi" %in% threshold) {
-    names_data_chi <- c(names(data),"Chi.Threshold")
-    data <- data.frame(cbind(data,chi))
-    names(data) <- names_data_chi
+    data <- cbind(data, Chi.Threshold = chi)
   }
   
   if ("entropy" %in% threshold) {
-    names_data_ent <- c(names(data),"Entropy.Threshold")
-    data <- data.frame(cbind(data,entropy))
-    names(data) <- names_data_ent
+    data <- cbind(data, Entropy.Threshold = entropy)
   }
   
   return(data)

@@ -4,11 +4,18 @@
 \alias{cpPermuteEntropy}
 \title{Confidence Intervals Of Entropy Based On Random Permutations Of Network}
 \usage{
-cpPermuteEntropy(W, cpThreshold.object, n = 100, interval = 0.95,
-  CFinder = FALSE)
+cpPermuteEntropy(
+  W,
+  cpThreshold.object,
+  n = 100,
+  interval = 0.95,
+  CFinder = FALSE,
+  ncores,
+  seed = NULL
+)
 }
 \arguments{
-\item{W}{A qgraph object; see also \link[qgraph]{qgraph}}
+\item{W}{A qgraph object or a symmetric matrix; see also \link[qgraph]{qgraph}}
 
 \item{cpThreshold.object}{A cpThreshold object; see also \link{cpThreshold}}
 
@@ -19,6 +26,16 @@ default is 0.95)}
 
 \item{CFinder}{logical indicating whether clique percolation for weighted networks
 should be performed as in CFinder ; see also \link{cpAlgorithm}}
+
+\item{ncores}{Numeric.
+Number of cores to use in computing results.
+Defaults to \code{parallel::detectCores() / 2} or half of your
+computer's processing power.
+Set to \code{1} to not use parallel computing}
+
+\item{seed}{Numeric.
+Set seed for reproducible results.
+Defaults to \code{NULL}}
 }
 \value{
 A list object with the following elements:
@@ -28,6 +45,7 @@ A list object with the following elements:
   \item{Extracted.Rows}{rows extracted from \code{cpThreshold.object} that are
      larger than the upper bound of the specified confidence interval for
      each \code{k}}
+  \item{Settings}{user-specified settings}
 }
 }
 \description{
@@ -54,6 +72,8 @@ The function generates \code{n} random permutations of the network
   confidence interval of the respective \code{k}.
 }
 \examples{
+## Example with fictitious data
+
 # create qgraph object
 W <- matrix(c(0,1,1,1,0,0,0,0,
               0,0,1,1,0,0,0,0,
@@ -72,13 +92,36 @@ cpThreshold.object <- cpThreshold(W = W, method = "unweighted", k.range = c(3,4)
 
 # run cpPermuteEntropy with 100 permutations and 95\% confidence interval
 \donttest{
-set.seed(4186)
 results <- cpPermuteEntropy(W = W, cpThreshold.object = cpThreshold.object,
-                            n = 100, interval = 0.95)
+                            n = 100, interval = 0.95, ncores = 1, seed = 4186)
 
 # check results
-results$Confidence.Interval
-results$Extracted.Rows
+results
+}
+
+## Example with Obama data set (see ?Obama)
+
+# get data
+data(Obama)
+
+# estimate network
+net <- qgraph::EBICglasso(qgraph::cor_auto(Obama), n = nrow(Obama))
+
+# create cpThreshold object
+\donttest{
+threshold <- cpThreshold(net, method = "weighted",
+                         k.range = 3:4,
+                         I.range = seq(0.1, 0.5, 0.01),
+                         threshold = "entropy")
+}
+                          
+# run cpPermuteEntropy with 50 permutations and 99\% confidence interval
+\donttest{
+permute <- cpPermuteEntropy(net, cpThreshold.object = threshold,
+                            interval = 0.99, n = 50, ncores = 1, seed = 4186)
+
+# check results
+permute
 }
 
 }

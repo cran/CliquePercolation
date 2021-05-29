@@ -4,7 +4,7 @@
 #' to the community partition identified via the clique percolation community
 #' detection algorithm, taking predefined sets of nodes into account.
 #' 
-#' @param W A qgraph object; see also \link[qgraph]{qgraph}
+#' @param W A qgraph object or a symmetric matrix; see also \link[qgraph]{qgraph}
 #' @param list.of.communities List object taken from results of cpAlgorithm
 #'    function; see also \link{cpAlgorithm}
 #' @param list.of.sets List object specifying predefined groups of nodes
@@ -31,6 +31,14 @@
 #'    smooth gradients of a set color should be generated using
 #'    \link[colorspace:hcl_palettes]{colorspace::sequential_hcl()}; default is
 #'    the number of pure communities of a set plus one; see Details
+#' @param own.colors Vector of hex code colors of length of \code{list.of.communities}
+#'    (if \code{list.of.sets = NULL}) or \code{list.of.sets} (if \code{list.of.sets}
+#'    is not NULL); if specified, colors are used for coloring the communities and no
+#'    other colors are generated; if NULL (default), reasonable colors are generated; see
+#'    Details
+#' @param avoid.repeated.mixed.colors Logical indicating whether it should be avoided
+#'    that multiple mixed communities are assigned the same color; default is FALSE;
+#'    see Details
 #' @param ... any additional argument from qgraph; see also \link[qgraph]{qgraph}
 #' 
 #' @return
@@ -39,7 +47,7 @@
 #'   Additionally, it returns a list with the following elements:
 #'   \describe{
 #'   \item{basic.colors.sets}{Vector with colors assigned to the elements in
-#'         \code{list.of.sets}, if list of sets is not NULL. Otherwise NULL is returned.}
+#'         \code{list.of.sets}, if \code{list.of.sets} is not NULL. Otherwise NULL is returned.}
 #'   \item{colors.communities}{Vector with colors of the communities, namely assigned
 #'         colors if \code{list.of.sets = NULL} or shaded and mixed colors if
 #'         \code{list.of.sets} is not NULL.}
@@ -103,6 +111,18 @@
 #'   produces rather good color mixing and is computationally efficient. Yet,
 #'   results may not always be absolutely precise.
 #'   
+#'   The mixing of colors for mixed communities can lead to multiple communities
+#'   being assigned the same color. For instance, two communities with two nodes
+#'   each from Sets 1 and 2 would have the same color, namely the colors assigned to
+#'   the sets mixed in the same proportion. This is reasonable, because these
+#'   communities are structurally similar. However, it can be confusing to have
+#'   two actually different communities with the same color. To avoid this,
+#'   set \code{avoid.repeated.mixed.colors = TRUE}. Doing so slightly alters the
+#'   ratio with which the color of a mixed community is determined, if the
+#'   community would have been assigned a color that was already assigned.
+#'   This slight variation of the ratio is random. To reproduce results from a
+#'   previous run, set a seed.
+#'   
 #'   The fading of pure communities via sequential_hcl is a function of
 #'   the number of sets. If there are more pure communities from a specific
 #'   set, more faded colors will be generated. This makes coloring results hard
@@ -111,8 +131,8 @@
 #'   sized 6, 3, and 3, all of them pure (having nodes from only one set), then
 #'   their colors will be strong, average, and almost white respectively. If the
 #'   same 12 nodes belong to two communities size 6 and 6, both of them pure, then
-#'   their colors will be strong and average to almost white. Changing the number
-#'   of pure communities therefore changes the color range. To circumvent that,
+#'   their colors will be strong and average to almost white. Different numbers
+#'   of pure communities therefore change the color range. To circumvent that,
 #'   one can specify \code{set.palettes.size} to any number larger than the number
 #'   of pure communities of a set plus one. For all sets, sequential_hcl
 #'   then generates as many shades towards white of a respective color as specified
@@ -136,14 +156,23 @@
 #'   This function generates maximally different colors in HCL space and can generate a
 #'   higher number of distinct colors. With these colors, the rest of the procedure is
 #'   identical. The seedcolors specified in Polychrome are general red, green, and
-#'   blue. Note that the Polychrome palettes are maximally distinct, thus they are
+#'   blue. As the procedure relies on randomness, you have to set a seed to reproduce
+#'   the results of a previous run.
+#'   Note that the Polychrome palettes are maximally distinct, thus they are
 #'   most likely not as balanced as the palettes generated with colorspace. In general,
 #'   the function cpColoredGraph is recommended only for very small networks
 #'   anyways, for which \code{larger.six = FALSE} makes sense. For larger networks,
 #'   consider plotting the community network instead (see \link{cpCommunityGraph}).
+#'   
+#'   When own.colors are specified, these colors are assigned to the elements in
+#'   \code{list.of.communities} (if \code{list.of.sets = NULL}) or to the elements
+#'   in \code{list.of.sets} (if \code{list.of.sets} is not NULL). The rest of the 
+#'   procedure is identical.
 #'
 #' @examples
-#' #generate qgraph object with letters as labels
+#' ## Example with fictitious data
+#' 
+#' # generate qgraph object with letters as labels
 #' W <- matrix(c(0,0.10,0,0,0,0.10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
 #'               0,0,0.10,0,0,0.10,0.20,0,0,0,0,0.20,0.20,0,0,0,0,0,0,0,0,
 #'               0,0,0,0.10,0,0.10,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -172,44 +201,78 @@
 #' 
 #' W <- qgraph::qgraph(W, layout = "spring", edge.labels = TRUE)
 #' 
-#' #run clique percolation algorithm; three communities; two shared nodes, one isolated node
+#' # run clique percolation algorithm; three communities; two shared nodes, one isolated node
 #' cp <- cpAlgorithm(W, k = 3, method = "weighted", I = 0.09)
 #' 
-#' #color original graph according to community partition
-#' #all other arguments are defaults; qgraph arguments used to return same layout
+#' # color original graph according to community partition
+#' # all other arguments are defaults; qgraph arguments used to return same layout
 #' \donttest{
 #' results <- cpColoredGraph(W, list.of.communities = cp$list.of.communities.labels,
 #'                           layout = "spring", edge.labels = TRUE)
 #' }
 #' 
-#' #define sets of nodes; nodes a to o are in Set 1 and letters p to u in Set 2
+#' # own colors (red, green, and blue) assigned to the communities
+#' \donttest{
+#' results <- cpColoredGraph(W, list.of.communities = cp$list.of.communities.labels,
+#'                           own.colors = c("#FF0000","#00FF00","#0000FF"),
+#'                           layout = "spring", edge.labels = TRUE)
+#' }
+#' 
+#' # define sets of nodes; nodes a to o are in Set 1 and letters p to u in Set 2
 #' list.of.sets <- list(letters[seq(from = 1, to = 15)],
 #'                      letters[seq(from = 16, to = 21)])
 #' 
-#' #color original graph according to community partition, taking sets of nodes into account
-#' #two communities are pure and therefore get shades of set color; smaller community is more white
-#' #one community is mixed, so both set colors get mixed
+#' # color original graph according to community partition, taking sets of nodes into account
+#' # two communities are pure and therefore get shades of set color; smaller community is more white
+#' # one community is mixed, so both set colors get mixed
 #' \donttest{
 #' results <- cpColoredGraph(W, list.of.communities = cp$list.of.communities.labels,
 #'                           list.of.sets = list.of.sets,
 #'                           layout = "spring", edge.labels = TRUE)
 #' }
 #' 
-#' #graph as before, but specifying the set palette size to 6
-#' #from a range of 6 colors, the pure communities get the darker ones
-#' #in a different network with also two pure communities, luminance would therefore be equal
+#' # graph as before, but specifying the set palette size to 6
+#' # from a range of 6 colors, the pure communities get the darker ones
+#' # in a different network with also two pure communities, luminance would therefore be equal
 #' \donttest{
 #' results <- cpColoredGraph(W, list.of.communities = cp$list.of.communities.labels,
 #'                           list.of.sets = list.of.sets, set.palettes.size = 6,
 #'                           layout = "spring", edge.labels = TRUE)
 #' }
 #' 
-#' #graph as before, but colors sampled only form yellow to blue range, less chroma, more luminance
+#' # graph as before, but colors sampled only form yellow to blue range, less chroma, more luminance
 #' \donttest{
 #' results <- cpColoredGraph(W, list.of.communities = cp$list.of.communities.labels,
 #'                           list.of.sets = list.of.sets, set.palettes.size = 6,
 #'                           h.cp = c(50, 210), c.cp = 70, l.cp = 70,
 #'                           layout = "spring", edge.labels = TRUE)
+#' }
+#' 
+#' # own colors (red and green) assigned to the sets
+#' # two communities in shades of red and one community is mix of green and red (brown)
+#' \donttest{
+#' results <- cpColoredGraph(W, list.of.communities = cp$list.of.communities.labels,
+#'                           list.of.sets = list.of.sets,
+#'                           own.colors = c("#FF0000","#00FF00"),
+#'                           layout = "spring", edge.labels = TRUE)
+#' }
+#' 
+#' ## Example with Obama data set (see ?Obama)
+#' 
+#' # get data
+#' data(Obama)
+#' 
+#' # estimate network
+#' net <- qgraph::EBICglasso(qgraph::cor_auto(Obama), n = nrow(Obama))
+#' 
+#' # run clique percolation algorithm with specific k and I
+#' cpk3I.16 <- cpAlgorithm(net, k = 3, I = 0.16, method = "weighted")
+#' 
+#' # color original graph according to community partition
+#' # all other arguments are defaults
+#' \donttest{
+#' results <- cpColoredGraph(net, list.of.communities = cpk3I.16$list.of.communities.labels,
+#'                           layout = "spring", theme = "colorblind")
 #' }
 #' 
 #' @references
@@ -228,8 +291,23 @@
 cpColoredGraph <- function(W, list.of.communities, list.of.sets = NULL, larger.six = FALSE,
                            h.cp = c(0, 360 * (length(cplist) - 1)/length(cplist)),
                            c.cp = 80, l.cp = 60,
-                           set.palettes.size = (count_set + 1),
+                           set.palettes.size = NULL,
+                           own.colors = NULL,
+                           avoid.repeated.mixed.colors = FALSE,
                            ...){
+  
+  ###check whether W is a qgraph object
+  ###if not check whether matrix is symmetric and convert to qgraph object
+  if (!isTRUE(methods::is(W, "qgraph"))) {
+    
+    #error if W is a matrix but not symmetric
+    if (isSymmetric(W) == FALSE) {
+      stop("If W is a matrix, it must be symmetric.")
+    }
+    
+    #converts matrix to qgraph if input is not a qgraph object
+    W <- qgraph::qgraph(W, DoNotPlot = TRUE)
+  }
   
   #error, if list.of.sets does not entail as many nodes as the network (if list.of.sets is specified)
   if (!is.null(list.of.sets)) {
@@ -243,7 +321,7 @@ cpColoredGraph <- function(W, list.of.communities, list.of.sets = NULL, larger.s
   #necessary only if list.of.sets is specified
   if (!is.null(list.of.sets)) {
     if (!(all(unique(unlist(list.of.communities)) %in% unique(unlist(list.of.sets))))) {
-      stop("Not all nodes in list.of.communities.labels are also in list.of.sets.
+      stop("Not all nodes in list.of.communities are also in list.of.sets.
            Check whether they have the same format (both are labels or both are numbers) and
            whether there are no spelling mistakes.")
     }
@@ -405,12 +483,11 @@ cpColoredGraph <- function(W, list.of.communities, list.of.sets = NULL, larger.s
   }
   
   #assigning colors to communities
-  #if no list.of.sets is specified...
+  #if no list.of.sets is specified and no own.colors are defined...
   #communities get qualitatively different colors as by polychrome or colorspace
-  if (is.null(list.of.sets)) {
+  if (is.null(list.of.sets) & is.null(own.colors)) {
     cplist <- list.of.communities
     if (larger.six == TRUE) {
-      set.seed(4186)
       colors_communities <- as.vector(Polychrome::createPalette(length(list.of.communities),
                                                                 c("#CC0000","#00CC00","#0000CC"),
                                                                 target = "normal"))
@@ -425,15 +502,26 @@ cpColoredGraph <- function(W, list.of.communities, list.of.sets = NULL, larger.s
   #elements in list.of.sets get qualitatively different colors by polychrome or colorspace
   if (!is.null(list.of.sets)) {
     cplist <- list.of.sets
-    if (larger.six == TRUE) {
-      set.seed(4186)
+    #if no own.colors are defined...
+    if (larger.six == TRUE & is.null(own.colors)) {
       colors_sets <- as.vector(Polychrome::createPalette(length(list.of.sets),
                                                          c("#CC0000","#00CC00","#0000CC"),
                                                          target = "normal"))
     }
-    if (larger.six == FALSE) {
+    if (larger.six == FALSE & is.null(own.colors)) {
       colors_sets <- colorspace::qualitative_hcl(length(list.of.sets),
                                                  h = h.cp, c = c.cp, l = l.cp)
+    }
+    #if own.colors are defined...
+    if (!is.null(own.colors)) {
+      #error, if there are not as many colors as there are sets
+      if (length(own.colors) > length(list.of.sets)) {
+        stop("There are more colors than sets. Specify less colors in own.colors.")
+      }
+      if (length(own.colors) < length(list.of.sets)) {
+        stop("There are less colors than sets. Specify more colors in own.colors.")
+      }
+      colors_sets <- own.colors
     }
     #create vector with slots for each community that needs to be colored
     colors_communities <- c(rep(NA, length(list.of.communities)))
@@ -450,10 +538,10 @@ cpColoredGraph <- function(W, list.of.communities, list.of.sets = NULL, larger.s
     }
     #community entails nodes from only one set -> colored proportionally to its size
     #for this, first create palettes of colors, shaded towards white, for each set
-    #this is necessary only if there are pure community with nodes form only this set
+    #this is necessary only if there are pure community with nodes from only this set
     #the number of shades is determined based on set.palettes.size
     #per default, refers to the number of pure communities with a respective set that need color + 1
-    #this (count_set + 1), in set.palettes.size default, ensures non-white pure communities
+    #this (count_set + 1) ensures non-white pure communities
     #if set.palettes.site is set higher, colors get shaded toward white accordingly 
     set_palettes <- list()
     for (l in 1:(length(list.of.sets))) {
@@ -464,47 +552,89 @@ cpColoredGraph <- function(W, list.of.communities, list.of.sets = NULL, larger.s
         }
       }
       if (count_set > 0) {
+        if (is.null(set.palettes.size)) {
+          set.palettes.size.loop <- count_set + 1
+        } else {set.palettes.size.loop <- set.palettes.size}
         basic_color <- methods::as(colorspace::hex2RGB(colors_sets[l]), "polarLUV")
-        set_palettes[[l]] <- colorspace::sequential_hcl(set.palettes.size,
+        set_palettes[[l]] <- colorspace::sequential_hcl(set.palettes.size.loop,
                                                         h = colorspace::coords(basic_color)[3],
                                                         c = colorspace::coords(basic_color)[2],
                                                         l = c(colorspace::coords(basic_color)[1],
                                                               100))
-        #error, if set.palettes.size is smaller than count_set + 1
+        #error, if set.palettes.size(.loop) is smaller than count_set + 1
         #this would lead to less colors than required to color all pure communities
-        if (set.palettes.size < (count_set + 1)) {
+        if (set.palettes.size.loop < (count_set + 1)) {
           stop("There are more pure communities of one set than specified in set.palettes.size.
                Thus, there are less colors produced than required. Set set.palettes.size higher.")
         }
       } else {set_palettes[[l]] <- vector()}
     }
     #identify all pure and mixed communities
-    pure_communities <- sapply(community_sets, unique)
-    pure_communities <- sapply(pure_communities, length)
-    pure_communities <- which(pure_communities == 1)
+    pure_communities <- c()
+    for (z in 1:length(community_sets)) {
+      if (length(unique(community_sets[[z]])) == 1) {
+        pure_communities <- c(pure_communities, z)
+      }
+    }
     if (length(pure_communities) == 0) {
       mixed_communities <- c(1:length(community_sets))
     } else {mixed_communities <- c(1:length(community_sets))[-pure_communities]}
+    #if there are pure communities...
     #to each pure community, assign one color from the respective palette
     #stronger colors are assigned to larger communities
-    for (n in 1:length(list.of.sets)) {
-      selector <- which(sapply(community_sets[pure_communities], unique) == n)
-      selected_communities <- pure_communities[selector]
-      size_order <- order(sapply(community_sets[selected_communities], length), decreasing = TRUE)
-      selected_colors <- set_palettes[[n]][1:length(selected_communities)]
-      colors_communities[selected_communities] <- selected_colors[size_order]
-    }
-    #community entails nodes from multiple sets -> set colors mixed according to ratio of set nodes
-    for (o in mixed_communities) {
-      set_numbers <- as.numeric(unique(community_sets[[o]]))
-      basic_colors <- colors_sets[set_numbers]
-      ratio_mix <- c()
-      for (p in set_numbers) {
-        ratio_mix <- c(ratio_mix, length(which(community_sets[[o]] == p)))
+    if (length(pure_communities) > 0) {
+      for (n in 1:length(list.of.sets)) {
+        selector <- which(sapply(community_sets[pure_communities], unique) == n)
+        selected_communities <- pure_communities[selector]
+        size_order <- order(sapply(community_sets[selected_communities], length), decreasing = TRUE)
+        selected_colors <- set_palettes[[n]][1:length(selected_communities)]
+        colors_communities[selected_communities] <- selected_colors[size_order]
       }
-      ratio_mix <- ratio_mix/sum(ratio_mix)
-      colors_communities[o] <- subColorMix(basic_colors, ratio = ratio_mix)
     }
+    #if there are mixed communities...
+    #community entails nodes from multiple sets -> set colors mixed according to ratio of set nodes
+    if (length(mixed_communities) > 0) {
+      for (o in mixed_communities) {
+        set_numbers <- as.numeric(unique(community_sets[[o]]))
+        basic_colors <- colors_sets[set_numbers]
+        ratio_mix <- c()
+        for (p in set_numbers) {
+          ratio_mix <- c(ratio_mix, length(which(community_sets[[o]] == p)))
+        }
+        ratio_mix <- ratio_mix/sum(ratio_mix)
+        add_color <- subColorMix(basic_colors, ratio = ratio_mix)
+        #if avoid.repeated.mixed.colors = TRUE...
+        #mixed communities with the same color need to be disentangled
+        #minor random alteration of ratio in which colors are mixed
+        #loop continues until color that will be added is not yet part of the vector of colors
+        if (avoid.repeated.mixed.colors == TRUE) {
+          while (add_color %in% colors_communities) {
+            for (q in 1:length(ratio_mix)) {
+              rand_change <- round(stats::runif(1, min = -0.05, max = 0.05), 3)
+              ratio_mix[q] <- ratio_mix[q] + rand_change
+              if (ratio_mix[q] < 0) {
+                ratio_mix[q] <- 0.001
+              }
+            }
+            ratio_mix <- ratio_mix/sum(ratio_mix)
+            add_color <- subColorMix(basic_colors, ratio = ratio_mix)
+          }
+        }
+        colors_communities[o] <- add_color
+      }
+    }
+  }
+  #if own.colors are defined but no list.of.sets...
+  if (!is.null(own.colors) & is.null(list.of.sets)) {
+    #error, if there are not as many colors as there are communities
+    if (length(own.colors) > length(list.of.communities)) {
+      stop("There are more colors than communities. Specify less colors in own.colors.")
+    }
+    if (length(own.colors) < length(list.of.communities)) {
+      stop("There are less colors than communities. Specify more colors in own.colors.")
+    }
+    colors_communities <- own.colors
+    colors_sets <- NULL
   }
   
   #assigning a color to each node
@@ -522,8 +652,9 @@ cpColoredGraph <- function(W, list.of.communities, list.of.sets = NULL, larger.s
   qgraph::qgraph(qgraph::getWmat(W), pie = node_split, pieColor = colors_nodes, pieBorder = 1, ...)
   
   #return basic colors assigned to sets (if there were sets), community colors, and node colors
-  return(list(basic.colors.sets = colors_sets,
-              colors.communities = colors_communities,
-              colors.nodes = colors_nodes))
+  #invisible prevents output from being printed in console when output is not assigned
+  invisible(list(basic.colors.sets = colors_sets,
+                 colors.communities = colors_communities,
+                 colors.nodes = colors_nodes))
   
 }
