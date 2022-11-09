@@ -193,6 +193,13 @@ cpk3 <- cpAlgorithm(W, k = 3, method = "unweighted")
 cpk3
 summary(cpk3)
 
+## ---- echo = TRUE, results = FALSE--------------------------------------------
+thresholds.small.fuzzymod <- cpThreshold(W, method = "unweighted", k.range = c(3,4),
+                                         threshold = c("entropy","fuzzymod"))
+
+## ---- echo = TRUE-------------------------------------------------------------
+thresholds.small.fuzzymod
+
 ## ---- echo = TRUE, dpi = 300, fig.cap = "**Community coloring I.**", fig.align = "center", out.extra = 'style = "border:none"', out.width = "60%"----
 colored.net1 <- cpColoredGraph(W, list.of.communities = cpk3$list.of.communities.labels,
                                edge.width = 4)
